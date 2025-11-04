@@ -387,6 +387,42 @@
             font-size: 1rem;
         }
 
+        /* Social Media Profile Styles */
+        .social-profile-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .social-profile-btn {
+            padding: 12px 8px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s;
+            font-size: clamp(0.7rem, 2vw, 0.8rem);
+            font-weight: 500;
+        }
+
+        .social-profile-btn:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+        }
+
+        .social-profile-btn.active {
+            border-color: var(--primary);
+            background: #eff6ff;
+            font-weight: 600;
+        }
+
+        .social-profile-icon {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
         /* IATA Boarding Pass Styles */
         .iata-boarding-pass {
             max-width: 400px;
@@ -653,6 +689,10 @@
                 width: 28px;
                 height: 28px;
             }
+            
+            .social-profile-grid {
+                grid-template-columns: 1fr 1fr;
+            }
         }
     </style>
 </head>
@@ -851,6 +891,37 @@
                             <!-- Custom fields -->
                             <div class="format-field-group" id="customFields" style="display: none;">
                                 <h4>Custom QR Code Content</h4>
+                                
+                                <div class="form-group">
+                                    <label>Quick Profile Templates</label>
+                                    <div class="social-profile-grid">
+                                        <button class="social-profile-btn" data-profile="instagram">
+                                            <div class="social-profile-icon">📷</div>
+                                            Instagram
+                                        </button>
+                                        <button class="social-profile-btn" data-profile="linkedin">
+                                            <div class="social-profile-icon">💼</div>
+                                            LinkedIn
+                                        </button>
+                                        <button class="social-profile-btn" data-profile="indeed">
+                                            <div class="social-profile-icon">💼</div>
+                                            Indeed
+                                        </button>
+                                        <button class="social-profile-btn" data-profile="youtube">
+                                            <div class="social-profile-icon">📺</div>
+                                            YouTube
+                                        </button>
+                                        <button class="social-profile-btn" data-profile="company">
+                                            <div class="social-profile-icon">🏢</div>
+                                            Company
+                                        </button>
+                                        <button class="social-profile-btn" data-profile="generic">
+                                            <div class="social-profile-icon">🔗</div>
+                                            Generic URL
+                                        </button>
+                                    </div>
+                                </div>
+                                
                                 <div class="form-group">
                                     <label for="customTitle">QR Code Title/Purpose</label>
                                     <input type="text" id="customTitle" placeholder="e.g., Event Registration, Product Info, Wi-Fi Access" value="Event Registration">
@@ -1564,6 +1635,50 @@ END:VCARD`;
             });
         }
 
+        // Setup social media profile buttons
+        function setupSocialProfileButtons() {
+            document.querySelectorAll('[data-profile]').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const profileType = this.getAttribute('data-profile');
+                    document.querySelectorAll('[data-profile]').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // Set default content based on profile type
+                    const titleInput = document.getElementById('customTitle');
+                    const contentInput = document.getElementById('customContent');
+                    
+                    switch(profileType) {
+                        case 'instagram':
+                            titleInput.value = 'Instagram Profile';
+                            contentInput.value = 'https://www.instagram.com/yourusername';
+                            break;
+                        case 'linkedin':
+                            titleInput.value = 'LinkedIn Profile';
+                            contentInput.value = 'https://www.linkedin.com/in/yourprofile';
+                            break;
+                        case 'indeed':
+                            titleInput.value = 'Indeed Profile';
+                            contentInput.value = 'https://www.indeed.com/profile';
+                            break;
+                        case 'youtube':
+                            titleInput.value = 'YouTube Channel';
+                            contentInput.value = 'https://www.youtube.com/c/yourchannel';
+                            break;
+                        case 'company':
+                            titleInput.value = 'Company Website';
+                            contentInput.value = 'https://www.yourcompany.com';
+                            break;
+                        case 'generic':
+                            titleInput.value = 'Website URL';
+                            contentInput.value = 'https://example.com';
+                            break;
+                    }
+                    
+                    updateQRCode();
+                });
+            });
+        }
+
         // Switch between format fields
         function switchFormatFields() {
             const qrType = document.getElementById('qrType').value;
@@ -1718,6 +1833,7 @@ END:VCARD`;
             document.getElementById('arrivalDate').value = tomorrow.toISOString().split('T')[0];
             
             setupShapeButtons();
+            setupSocialProfileButtons();
             switchFormatFields(); // Initialize the correct format fields
             updateQRCode();
         });
