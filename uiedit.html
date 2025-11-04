@@ -1,0 +1,1732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Format QR Generator</title>
+    <script src="https://cdn.jsdelivr.net/npm/qr-code-styling@1.6.0/lib/qr-code-styling.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --secondary: #f59e0b;
+            --accent: #10b981;
+            --light-bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #334155;
+            --border: #e2e8f0;
+            --error: #ef4444;
+            --success: #22c55e;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--text);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: clamp(1.8rem, 4vw, 2.5rem);
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: clamp(0.9rem, 2vw, 1.1rem);
+            opacity: 0.9;
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0;
+        }
+
+        @media (max-width: 968px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .form-section {
+            padding: clamp(20px, 4vw, 40px);
+            background: var(--light-bg);
+        }
+
+        .section-title {
+            font-size: clamp(1.2rem, 3vw, 1.5rem);
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-title::before {
+            content: '';
+            width: 4px;
+            height: 20px;
+            background: var(--primary);
+            border-radius: 2px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text);
+            font-size: clamp(0.9rem, 2vw, 1rem);
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s;
+            background: white;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        @media (max-width: 480px) {
+            .row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .color-group {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .color-preview {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            border: 2px solid var(--border);
+        }
+
+        /* Shape Styles */
+        .shape-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .shape-btn {
+            padding: 12px 8px;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s;
+            font-size: clamp(0.7rem, 2vw, 0.8rem);
+            font-weight: 500;
+        }
+
+        .shape-btn:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+        }
+
+        .shape-btn.active {
+            border-color: var(--primary);
+            background: #eff6ff;
+            font-weight: 600;
+        }
+
+        .shape-preview {
+            width: 32px;
+            height: 32px;
+            margin: 0 auto 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .preview-square { 
+            background: #374151;
+            border-radius: 4px;
+        }
+        .preview-dot { 
+            background: #ef4444;
+            border-radius: 50%;
+        }
+        .preview-rounded { 
+            background: #10b981;
+            border-radius: 8px;
+        }
+        .preview-extra-rounded { 
+            background: #8b5cf6;
+            border-radius: 12px;
+        }
+        .preview-star { 
+            background: #f59e0b;
+            clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+        }
+        .preview-triangle { 
+            background: #ec4899;
+            clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+        }
+
+        /* Preview Section */
+        .preview-section {
+            padding: clamp(20px, 4vw, 40px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            background: white;
+        }
+
+        .qr-container {
+            position: relative;
+            margin: 20px 0;
+            padding: 20px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            border: 3px solid var(--border);
+            max-width: 100%;
+        }
+
+        #canvas {
+            border-radius: 10px;
+            overflow: hidden;
+            max-width: 100%;
+            height: auto;
+        }
+
+        .preview-info {
+            text-align: center;
+            margin-top: 20px;
+            color: var(--text);
+            font-size: clamp(0.8rem, 2vw, 0.9rem);
+            background: #f8fafc;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            width: 100%;
+        }
+
+        .button-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        @media (max-width: 480px) {
+            .button-group {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        button {
+            padding: 15px 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: clamp(0.9rem, 2vw, 1rem);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .generate-btn {
+            background: var(--primary);
+            color: white;
+        }
+
+        .generate-btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+        }
+
+        .download-btn {
+            background: var(--secondary);
+            color: white;
+        }
+
+        .download-btn:hover {
+            background: #eab308;
+            transform: translateY(-2px);
+        }
+
+        .status-message {
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 15px;
+            text-align: center;
+            font-weight: 500;
+            font-size: clamp(0.8rem, 2vw, 0.9rem);
+        }
+
+        .error {
+            background: #fee2e2;
+            color: var(--error);
+            border: 1px solid #fecaca;
+        }
+
+        .success {
+            background: #dcfce7;
+            color: var(--success);
+            border: 1px solid #bbf7d0;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .slider-container input {
+            flex: 1;
+        }
+
+        .value-display {
+            min-width: 50px;
+            text-align: center;
+            font-weight: 600;
+            color: var(--primary);
+            font-size: clamp(0.8rem, 2vw, 0.9rem);
+        }
+
+        .corner-design-section {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid var(--border);
+            margin-bottom: 20px;
+        }
+
+        .info-box {
+            background: #f0f9ff;
+            border: 1px solid #0ea5e9;
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 10px;
+            font-size: clamp(0.75rem, 2vw, 0.85rem);
+        }
+
+        .format-section {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid var(--border);
+            margin-bottom: 20px;
+        }
+
+        .format-fields {
+            margin-top: 15px;
+        }
+
+        .format-field-group {
+            margin-bottom: 15px;
+            padding: 15px;
+            background: #f8fafc;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .format-field-group h4 {
+            margin-bottom: 10px;
+            color: var(--primary);
+            font-size: 1rem;
+        }
+
+        /* IATA Boarding Pass Styles */
+        .iata-boarding-pass {
+            max-width: 400px;
+            margin: 20px auto;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            font-family: 'Courier New', monospace;
+            position: relative;
+        }
+        
+        .iata-pass-header {
+            background: #003a70;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            border-bottom: 2px dashed #ccc;
+        }
+        
+        .iata-airline {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .iata-tagline {
+            font-size: 10px;
+            opacity: 0.8;
+            margin-bottom: 10px;
+        }
+        
+        .iata-pass-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin: 5px 0;
+        }
+        
+        .iata-route-section {
+            display: flex;
+            justify-content: space-between;
+            padding: 20px 15px;
+            background: #f8f9fa;
+            position: relative;
+            gap: 60px;
+        }
+        
+        .iata-airport {
+            text-align: center;
+            flex: 1;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .iata-airport-label {
+            font-size: 10px;
+            color: #6c757d;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        
+        .iata-airport-code {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 3px;
+            color: #003a70;
+        }
+        
+        .iata-airport-city {
+            font-size: 12px;
+            color: #495057;
+            margin-bottom: 3px;
+        }
+        
+        .iata-airport-terminal {
+            font-size: 10px;
+            color: #6c757d;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .iata-airport-time {
+            font-size: 10px;
+            color: #6c757d;
+        }
+        
+        .horizontal-airplane {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
+        }
+        
+        .passenger-name-section {
+            padding: 10px 15px;
+            background: white;
+            text-align: center;
+            border-bottom: 1px dashed #ccc;
+        }
+        
+        .passenger-name-label {
+            font-size: 10px;
+            color: #6c757d;
+            margin-bottom: 3px;
+            font-weight: 600;
+        }
+        
+        .passenger-name-value {
+            font-size: 16px;
+            font-weight: bold;
+            color: #003a70;
+        }
+        
+        .flight-details-section {
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            background: white;
+            border-bottom: 1px dashed #ccc;
+            gap: 40px;
+        }
+        
+        .flight-left-details, .flight-right-details {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .flight-detail-item {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .flight-detail-label {
+            font-size: 10px;
+            color: #6c757d;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        
+        .flight-detail-value {
+            font-size: 14px;
+            font-weight: bold;
+            color: #003a70;
+        }
+        
+        .iata-codes-section {
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border-bottom: 1px dashed #ccc;
+        }
+        
+        .iata-qr-container {
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: center;
+            padding: 5px;
+        }
+        
+        .qr-code-container {
+            width: 120px;
+            height: 120px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 1px solid #eee;
+            background: white;
+        }
+        
+        .boarding-time-section {
+            padding: 8px 15px;
+            background: #f0f8ff;
+            text-align: center;
+            border-bottom: 1px dashed #ccc;
+        }
+        
+        .boarding-time-label {
+            font-size: 10px;
+            color: #6c757d;
+            margin-bottom: 3px;
+            font-weight: 600;
+        }
+        
+        .boarding-time-value {
+            font-size: 14px;
+            font-weight: bold;
+            color: #003a70;
+        }
+        
+        .iata-footer {
+            padding: 10px 15px;
+            text-align: center;
+            background: #003a70;
+            color: white;
+            font-size: 10px;
+        }
+        
+        .iata-by-phonon {
+            margin-top: 3px;
+            opacity: 0.7;
+        }
+        
+        .weather-section {
+            padding: 10px 15px;
+            background: #f0f8ff;
+            border-top: 1px dashed #ccc;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .weather-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .weather-icon {
+            font-size: 24px;
+        }
+
+        .weather-details {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .weather-temp {
+            font-size: 16px;
+            font-weight: bold;
+            color: #003a70;
+        }
+
+        .weather-desc {
+            font-size: 10px;
+            color: #6c757d;
+        }
+
+        .weather-location {
+            font-size: 12px;
+            font-weight: 600;
+            color: #003a70;
+        }
+
+        .weather-updated {
+            font-size: 8px;
+            color: #6c757d;
+            margin-top: 2px;
+        }
+
+        @media (max-width: 380px) {
+            .shape-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            
+            .shape-preview {
+                width: 28px;
+                height: 28px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="header">
+                <h1>Multi-Format QR Generator</h1>
+                <p>Generate V-card, WhatsApp, IATA Boarding Pass, and Custom QR codes</p>
+            </div>
+            
+            <div class="content">
+                <!-- Left Side - Form -->
+                <div class="form-section">
+                    <div class="section-title">QR Code Format</div>
+                    
+                    <div class="format-section">
+                        <div class="form-group">
+                            <label for="qrType">Select QR Code Type</label>
+                            <select id="qrType">
+                                <option value="vcard">V-card (Contact Information)</option>
+                                <option value="whatsapp">WhatsApp Message</option>
+                                <option value="boarding">IATA Boarding Pass</option>
+                                <option value="custom">Custom QR Code</option>
+                            </select>
+                        </div>
+                        
+                        <div class="format-fields" id="formatFields">
+                            <!-- V-card fields (default) -->
+                            <div class="format-field-group" id="vcardFields">
+                                <h4>Contact Information</h4>
+                                <div class="form-group">
+                                    <label for="name">Full Name</label>
+                                    <input type="text" id="name" placeholder="Enter your full name" value="Ujwal Makhija">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="title">Job Title</label>
+                                    <input type="text" id="title" placeholder="Enter your job title" value="CEO & FOUNDER">
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="form-group">
+                                        <label for="phone">Phone Number</label>
+                                        <input type="tel" id="phone" placeholder="+91 1234567890" value="+919227728888">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="email">Email Address</label>
+                                        <input type="email" id="email" placeholder="your@email.com" value="ujwal@phonon.io">
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="website">Website</label>
+                                    <input type="url" id="website" placeholder="https://yourwebsite.com" value="https://www.phonon.io">
+                                </div>
+                            </div>
+                            
+                            <!-- WhatsApp fields -->
+                            <div class="format-field-group" id="whatsappFields" style="display: none;">
+                                <h4>WhatsApp Message</h4>
+                                <div class="form-group">
+                                    <label for="whatsappNumber">Phone Number</label>
+                                    <input type="tel" id="whatsappNumber" placeholder="+1234567890" value="+919227728888">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="whatsappMessage">Pre-filled Message</label>
+                                    <textarea id="whatsappMessage" placeholder="Enter your message (optional)" rows="3"></textarea>
+                                </div>
+                            </div>
+                            
+                            <!-- Boarding Pass fields -->
+                            <div class="format-field-group" id="boardingFields" style="display: none;">
+                                <h4>Boarding Pass Information</h4>
+                                <div class="row">
+                                    <div class="form-group">
+                                        <label for="firstName">First Name</label>
+                                        <input type="text" id="firstName" placeholder="Rahul" value="Rahul">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="lastName">Last Name</label>
+                                        <input type="text" id="lastName" placeholder="Sharma" value="Sharma">
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="pnr">PNR Number</label>
+                                    <input type="text" id="pnr" placeholder="ABC123" maxlength="6" value="ABC123">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="flight">Flight Number</label>
+                                    <input type="text" id="flight" placeholder="AI 2727" value="AI 2727">
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="form-group">
+                                        <label for="from">From (Airport Code)</label>
+                                        <select id="from">
+                                            <option value="DEL">DEL - Delhi</option>
+                                            <option value="BOM" selected>BOM - Mumbai</option>
+                                            <option value="BLR">BLR - Bangalore</option>
+                                            <option value="MAA">MAA - Chennai</option>
+                                            <option value="HYD">HYD - Hyderabad</option>
+                                            <option value="CCU">CCU - Kolkata</option>
+                                            <option value="AMD">AMD - Ahmedabad</option>
+                                            <option value="GOI">GOI - Goa</option>
+                                            <option value="PNQ">PNQ - Pune</option>
+                                            <option value="COK">COK - Kochi</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="fromTerminal">From Terminal</label>
+                                        <input type="text" id="fromTerminal" placeholder="T1" value="T1">
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="form-group">
+                                        <label for="to">To (Airport Code)</label>
+                                        <select id="to">
+                                            <option value="BOM">BOM - Mumbai</option>
+                                            <option value="DEL" selected>DEL - Delhi</option>
+                                            <option value="BLR">BLR - Bangalore</option>
+                                            <option value="MAA">MAA - Chennai</option>
+                                            <option value="HYD">HYD - Hyderabad</option>
+                                            <option value="CCU">CCU - Kolkata</option>
+                                            <option value="AMD">AMD - Ahmedabad</option>
+                                            <option value="GOI">GOI - Goa</option>
+                                            <option value="PNQ">PNQ - Pune</option>
+                                            <option value="COK">COK - Kochi</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="toTerminal">To Terminal</label>
+                                        <input type="text" id="toTerminal" placeholder="T1" value="T1">
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="form-group">
+                                        <label for="date">Departure Date</label>
+                                        <input type="date" id="date">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="time">Departure Time</label>
+                                        <input type="time" id="time" value="13:15">
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="form-group">
+                                        <label for="arrivalDate">Arrival Date</label>
+                                        <input type="date" id="arrivalDate">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="arrivalTime">Arrival Time</label>
+                                        <input type="time" id="arrivalTime" value="15:35">
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="boardingTime">Boarding Time</label>
+                                    <input type="time" id="boardingTime" value="12:45">
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="form-group">
+                                        <label for="seat">Seat</label>
+                                        <input type="text" id="seat" placeholder="17A" value="17A">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="class">Class</label>
+                                        <select id="class">
+                                            <option value="Y">Economy (Y)</option>
+                                            <option value="W">Premium Economy (W)</option>
+                                            <option value="J">Business (J)</option>
+                                            <option value="F">First (F)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="form-group">
+                                        <label for="sequence">Sequence Number</label>
+                                        <input type="text" id="sequence" placeholder="001A" value="001A">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="gate">Gate</label>
+                                        <input type="text" id="gate" placeholder="07" value="07">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Custom fields -->
+                            <div class="format-field-group" id="customFields" style="display: none;">
+                                <h4>Custom QR Code Content</h4>
+                                <div class="form-group">
+                                    <label for="customTitle">QR Code Title/Purpose</label>
+                                    <input type="text" id="customTitle" placeholder="e.g., Event Registration, Product Info, Wi-Fi Access" value="Event Registration">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="customContent">QR Code Content</label>
+                                    <textarea id="customContent" placeholder="Enter any text, URL, or data you want to encode in the QR code" rows="6">https://example.com/event-registration</textarea>
+                                </div>
+                                
+                                <div class="info-box">
+                                    💡 <strong>Tip:</strong> You can encode URLs, text, contact info, Wi-Fi credentials, or any other data in your custom QR code
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section-title">QR Code Colors</div>
+                    
+                    <div class="row">
+                        <div class="form-group">
+                            <label for="dotColor">Dot Color</label>
+                            <div class="color-group">
+                                <input type="color" id="dotColor" value="#1e293b">
+                                <div class="color-preview" id="dotColorPreview" style="background: #1e293b"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="bgColor">Background Color</label>
+                            <div class="color-group">
+                                <input type="color" id="bgColor" value="#ffffff">
+                                <div class="color-preview" id="bgColorPreview" style="background: #ffffff"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section-title">Corner Customization</div>
+                    
+                    <div class="corner-design-section">
+                        <!-- Corner Squares (Big outer corners) -->
+                        <div class="form-group">
+                            <label>Corner Squares (Big Outer)</label>
+                            <div class="shape-grid">
+                                <button class="shape-btn active" data-corner-type="square">
+                                    <div class="shape-preview preview-square"></div>
+                                    Square
+                                </button>
+                                <button class="shape-btn" data-corner-type="dot">
+                                    <div class="shape-preview preview-dot"></div>
+                                    Circle
+                                </button>
+                                <button class="shape-btn" data-corner-type="rounded">
+                                    <div class="shape-preview preview-rounded"></div>
+                                    Rounded
+                                </button>
+                                <button class="shape-btn" data-corner-type="extra-rounded">
+                                    <div class="shape-preview preview-extra-rounded"></div>
+                                    Smooth
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="cornerColor">Corner Square Color</label>
+                            <div class="color-group">
+                                <input type="color" id="cornerColor" value="#1e293b">
+                                <div class="color-preview" id="cornerColorPreview" style="background: #1e293b"></div>
+                            </div>
+                        </div>
+
+                        <!-- Inner Corner Dots (Small inner dots) -->
+                        <div class="form-group">
+                            <label>Inner Corner Dots (Small Inner)</label>
+                            <div class="shape-grid">
+                                <button class="shape-btn active" data-inner-type="square">
+                                    <div class="shape-preview preview-square"></div>
+                                    Square
+                                </button>
+                                <button class="shape-btn" data-inner-type="dot">
+                                    <div class="shape-preview preview-dot"></div>
+                                    Circle
+                                </button>
+                                <button class="shape-btn" data-inner-type="rounded">
+                                    <div class="shape-preview preview-rounded"></div>
+                                    Rounded
+                                </button>
+                                <button class="shape-btn" data-inner-type="extra-rounded">
+                                    <div class="shape-preview preview-extra-rounded"></div>
+                                    Smooth
+                                </button>
+                                <button class="shape-btn" data-inner-type="star">
+                                    <div class="shape-preview preview-star"></div>
+                                    Star
+                                </button>
+                                <button class="shape-btn" data-inner-type="triangle">
+                                    <div class="shape-preview preview-triangle"></div>
+                                    Triangle
+                                </button>
+                            </div>
+                            <div class="info-box">
+                                💡 <strong>Note:</strong> Star and Triangle shapes use circles in QR code for best compatibility
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="innerCornerColor">Inner Corner Dot Color</label>
+                            <div class="color-group">
+                                <input type="color" id="innerCornerColor" value="#ef4444">
+                                <div class="color-preview" id="innerCornerColorPreview" style="background: #ef4444"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section-title">Size & Logo</div>
+
+                    <div class="form-group">
+                        <label for="logoScale">Logo Size</label>
+                        <div class="slider-container">
+                            <input type="range" id="logoScale" min="0.1" max="0.5" step="0.05" value="0.2">
+                            <span class="value-display" id="logoScaleValue">20%</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="qrSize">QR Code Size</label>
+                        <div class="slider-container">
+                            <input type="range" id="qrSize" min="200" max="800" step="50" value="400">
+                            <span class="value-display" id="qrSizeValue">400px</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="logoUpload">Upload Logo (Optional)</label>
+                        <input type="file" id="logoUpload" accept="image/*">
+                    </div>
+
+                    <div class="button-group">
+                        <button class="generate-btn" id="generateBtn">
+                            <span>🔄</span> Generate QR Code
+                        </button>
+                        <button class="download-btn" id="downloadBtn">
+                            <span>💾</span> Download PNG
+                        </button>
+                    </div>
+
+                    <div id="statusMessage" class="status-message" style="display: none;"></div>
+                </div>
+
+                <!-- Right Side - Preview -->
+                <div class="preview-section">
+                    <!-- Standard QR Code Preview -->
+                    <div id="standardPreview">
+                        <div class="qr-container">
+                            <div id="canvas"></div>
+                        </div>
+                        
+                        <div class="preview-info" id="previewInfo">
+                            Preview - 400×400px | Format: V-card | Corners: Square | Inner: Square
+                        </div>
+
+                        <div class="preview-info" style="margin-top: 10px;">
+                            <strong>🎯 Inner Corner Dots:</strong> Small dots inside the 3 big corner squares
+                        </div>
+                    </div>
+                    
+                    <!-- IATA Boarding Pass Preview -->
+                    <div id="iataPreview" class="iata-boarding-pass" style="display: none;">
+                        <div class="iata-pass-header">
+                            <div class="iata-airline">22 NORTH</div>
+                            <div class="iata-tagline">Connecting Incredible India</div>
+                            <div class="iata-pass-title">BOARDING PASS</div>
+                        </div>
+                        
+                        <div class="iata-route-section">
+                            <div class="iata-airport">
+                                <div class="iata-airport-label">FROM</div>
+                                <div class="iata-airport-code" id="iataFrom">BOM</div>
+                                <div class="iata-airport-city" id="iataFromCity">MUMBAI</div>
+                                <div class="iata-airport-terminal" id="iataFromTerminal">Terminal T1</div>
+                                <div class="iata-airport-time" id="iataFromTime">10 SEP 13:15</div>
+                            </div>
+                            
+                            <div class="horizontal-airplane">
+                                <svg viewbox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M22 16V14L13.5 9V3.5C13.5 2.67 12.83 2 12 2C11.17 2 10.5 2.67 10.5 3.5V9L2 14V16L10.5 13.5V19L8 20.5V22L12 21L16 22V20.5L13.5 19V13.5L22 16Z" fill="#183D5E"/>
+                                </svg>
+                            </div>
+                            
+                            <div class="iata-airport">
+                                <div class="iata-airport-label">TO</div>
+                                <div class="iata-airport-code" id="iataTo">DEL</div>
+                                <div class="iata-airport-city" id="iataToCity">DELHI</div>
+                                <div class="iata-airport-terminal" id="iataToTerminal">Terminal T1</div>
+                                <div class="iata-airport-time" id="iataToTime">10 SEP 15:35</div>
+                            </div>
+                        </div>
+                        
+                        <div class="boarding-time-section">
+                            <div class="boarding-time-label">BOARDING TIME</div>
+                            <div class="boarding-time-value" id="iataBoarding">12:45</div>
+                        </div>
+                        
+                        <div class="passenger-name-section">
+                            <div class="passenger-name-label">PASSENGER</div>
+                            <div class="passenger-name-value" id="iataPassenger">RAHUL SHARMA</div>
+                        </div>
+                        
+                        <div class="flight-details-section">
+                            <div class="flight-left-details">
+                                <div class="flight-detail-item">
+                                    <div class="flight-detail-label">FLIGHT</div>
+                                    <div class="flight-detail-value" id="iataFlight">AI 2727</div>
+                                </div>
+                                <div class="flight-detail-item">
+                                    <div class="flight-detail-label">PNR</div>
+                                    <div class="flight-detail-value" id="iataPnr">ABC123</div>
+                                </div>
+                                <div class="flight-detail-item">
+                                    <div class="flight-detail-label">GATE</div>
+                                    <div class="flight-detail-value" id="iataGate">07</div>
+                                </div>
+                            </div>
+                            <div class="flight-right-details">
+                                <div class="flight-detail-item">
+                                    <div class="flight-detail-label">SEAT</div>
+                                    <div class="flight-detail-value" id="iataSeat">17A</div>
+                                </div>
+                                <div class="flight-detail-item">
+                                    <div class="flight-detail-label">SEQ</div>
+                                    <div class="flight-detail-value" id="iataSequence">001A</div>
+                                </div>
+                                <div class="flight-detail-item">
+                                    <div class="flight-detail-label">CLASS</div>
+                                    <div class="flight-detail-value" id="iataClass">ECONOMY</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="iata-codes-section">
+                            <div class="iata-qr-container">
+                                <canvas id="iataQrCode" class="qr-code-container"></canvas>
+                            </div>
+                        </div>
+                        
+                        <div class="weather-section">
+                            <div class="weather-info">
+                                <div class="weather-icon" id="weatherIcon">☀️</div>
+                                <div class="weather-details">
+                                    <div class="weather-temp" id="weatherTemp">32°C</div>
+                                    <div class="weather-desc" id="weatherDesc">Sunny</div>
+                                    <div class="weather-updated" id="weatherUpdated">Updated: Just now</div>
+                                </div>
+                            </div>
+                            <div class="weather-location" id="weatherLocation">Delhi</div>
+                        </div>
+                        
+                        <div class="iata-footer">
+                            <div>IATA STANDARD BOARDING PASS</div>
+                            <div class="iata-by-phonon">22 NORTH Powered by PHONON </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize QR Code
+        let qrCode = null;
+        
+        // Current styles
+        let currentCornerStyle = "square";
+        let currentInnerCornerStyle = "square";
+        let currentQRType = "vcard";
+
+        // Indian Airport code to city mapping
+        const airportCities = {
+            'DEL': 'DELHI',
+            'BOM': 'MUMBAI',
+            'BLR': 'BANGALORE',
+            'MAA': 'CHENNAI',
+            'HYD': 'HYDERABAD',
+            'CCU': 'KOLKATA',
+            'AMD': 'AHMEDABAD',
+            'GOI': 'GOA',
+            'PNQ': 'PUNE',
+            'COK': 'KOCHI'
+        };
+
+        // Generate QR data based on selected type
+        function generateQRData() {
+            const qrType = document.getElementById('qrType').value;
+            
+            switch(qrType) {
+                case "vcard":
+                    return generateVCard();
+                case "whatsapp":
+                    return generateWhatsAppURL();
+                case "boarding":
+                    return generateIataBarcodeData();
+                case "custom":
+                    return generateCustomData();
+                default:
+                    return generateVCard();
+            }
+        }
+
+        // Generate vCard function
+        function generateVCard() {
+            const name = document.getElementById('name').value || "Ujwal Makhija";
+            const title = document.getElementById('title').value || "CEO & FOUNDER";
+            const phone = document.getElementById('phone').value || "+919227728888";
+            const email = document.getElementById('email').value || "ujwal@phonon.io";
+            const website = document.getElementById('website').value || "https://www.phonon.io";
+
+            return `BEGIN:VCARD
+VERSION:3.0
+FN:${name}
+TITLE:${title}
+TEL;TYPE=CELL:${phone}
+EMAIL:${email}
+URL:${website}
+END:VCARD`;
+        }
+
+        // Generate WhatsApp URL
+        function generateWhatsAppURL() {
+            const phoneNumber = document.getElementById('whatsappNumber').value || "+919227728888";
+            const message = document.getElementById('whatsappMessage').value || "";
+            
+            // Clean phone number (remove any non-digit characters except +)
+            const cleanPhone = phoneNumber.replace(/[^\d+]/g, '');
+            
+            // Encode message for URL
+            const encodedMessage = encodeURIComponent(message);
+            
+            // Create WhatsApp URL
+            if (message.trim() !== "") {
+                return `https://wa.me/${cleanPhone}?text=${encodedMessage}`;
+            } else {
+                return `https://wa.me/${cleanPhone}`;
+            }
+        }
+
+        // Generate IATA barcode data (for QR code)
+        function generateIataBarcodeData() {
+            const firstName = document.getElementById('firstName').value || 'Rahul';
+            const lastName = document.getElementById('lastName').value || 'Sharma';
+            const pnr = document.getElementById('pnr').value || 'ABC123';
+            const flight = document.getElementById('flight').value || 'AI 2727';
+            const from = document.getElementById('from').value || 'BOM';
+            const to = document.getElementById('to').value || 'DEL';
+            const date = document.getElementById('date').value || '2025-09-10';
+            const time = document.getElementById('time').value || '13:15';
+            const seat = document.getElementById('seat').value || '17A';
+            const flightClass = document.getElementById('class').value || 'Y';
+            const sequence = document.getElementById('sequence').value || '001A';
+            
+            return `M1${lastName.toUpperCase()}/${firstName.toUpperCase()} ${flight} ${from}${to} ${date.replace(/-/g, '')} ${sequence} ${flightClass} ${seat} ${pnr}`;
+        }
+
+        // Generate Custom data
+        function generateCustomData() {
+            const customContent = document.getElementById('customContent').value || "https://example.com";
+            return customContent;
+        }
+
+        // Update preview info
+        function updatePreviewInfo() {
+            const size = document.getElementById('qrSize').value;
+            const qrType = document.getElementById('qrType').value;
+            const cornerStyle = getStyleName(currentCornerStyle);
+            const innerStyle = getStyleName(currentInnerCornerStyle);
+            
+            const typeNames = {
+                'vcard': 'V-card',
+                'whatsapp': 'WhatsApp',
+                'boarding': 'IATA Boarding Pass',
+                'custom': 'Custom'
+            };
+            
+            let customTitle = '';
+            if (qrType === 'custom') {
+                customTitle = document.getElementById('customTitle').value || 'Custom QR Code';
+                document.getElementById('previewInfo').textContent = 
+                    `Preview - ${size}×${size}px | Format: ${customTitle} | Corners: ${cornerStyle} | Inner: ${innerStyle}`;
+            } else {
+                document.getElementById('previewInfo').textContent = 
+                    `Preview - ${size}×${size}px | Format: ${typeNames[qrType]} | Corners: ${cornerStyle} | Inner: ${innerStyle}`;
+            }
+        }
+
+        // Get display name for styles
+        function getStyleName(style) {
+            const names = {
+                'square': 'Square',
+                'dot': 'Circle',
+                'rounded': 'Rounded',
+                'extra-rounded': 'Smooth',
+                'star': 'Star ⭐',
+                'triangle': 'Triangle ▲'
+            };
+            return names[style] || style;
+        }
+
+        // Map custom shapes to supported QR code shapes
+        function getActualQRShape(selectedShape) {
+            const shapeMap = {
+                'square': 'square',
+                'dot': 'dot',
+                'rounded': 'rounded',
+                'extra-rounded': 'extra-rounded',
+                'star': 'dot', // Star uses circle
+                'triangle': 'dot' // Triangle uses circle
+            };
+            return shapeMap[selectedShape] || 'square';
+        }
+
+        // Update QR Code
+        function updateQRCode() {
+            const qrType = document.getElementById('qrType').value;
+            
+            if (qrType === 'boarding') {
+                generateIataBoardingPass();
+            } else {
+                generateStandardQRCode();
+            }
+        }
+
+        // Generate Standard QR Code (for vCard, WhatsApp, and Custom)
+        function generateStandardQRCode() {
+            const size = parseInt(document.getElementById('qrSize').value) || 400;
+            const dotColor = document.getElementById('dotColor').value || "#1e293b";
+            const bgColor = document.getElementById('bgColor').value || "#ffffff";
+            const cornerColor = document.getElementById('cornerColor').value || "#1e293b";
+            const innerCornerColor = document.getElementById('innerCornerColor').value || "#ef4444";
+            const logoScale = parseFloat(document.getElementById('logoScale').value) || 0.2;
+            const file = document.getElementById('logoUpload').files[0];
+
+            // Get the actual shape for QR code generation
+            const actualInnerShape = getActualQRShape(currentInnerCornerStyle);
+
+            function updateQR(imageData = null) {
+                const config = {
+                    width: size,
+                    height: size,
+                    type: "canvas",
+                    data: generateQRData(),
+                    margin: 10,
+                    qrOptions: {
+                        errorCorrectionLevel: "M"
+                    },
+                    dotsOptions: {
+                        color: dotColor,
+                        type: "square"
+                    },
+                    backgroundOptions: {
+                        color: bgColor
+                    },
+                    cornersSquareOptions: {
+                        color: cornerColor,
+                        type: currentCornerStyle
+                    },
+                    cornersDotOptions: {
+                        color: innerCornerColor,
+                        type: actualInnerShape
+                    },
+                    imageOptions: {
+                        crossOrigin: "anonymous",
+                        margin: 5,
+                        imageSize: logoScale,
+                        hideBackgroundDots: true
+                    }
+                };
+
+                // Add image if provided
+                if (imageData) {
+                    config.image = imageData;
+                }
+
+                qrCode = new QRCodeStyling(config);
+
+                const canvasContainer = document.getElementById('canvas');
+                canvasContainer.innerHTML = '';
+                
+                try {
+                    qrCode.append(canvasContainer);
+                    updatePreviewInfo();
+                    
+                    if (['star', 'triangle'].includes(currentInnerCornerStyle)) {
+                        showStatus(`✨ ${getStyleName(currentInnerCornerStyle)} shape selected! Using circle in QR for best compatibility`, 'success');
+                    } else {
+                        showStatus('✅ QR code generated successfully!', 'success');
+                    }
+                } catch (error) {
+                    showStatus('❌ Error generating QR code: ' + error.message, 'error');
+                    console.error('QR Code Error:', error);
+                }
+            }
+
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    updateQR(e.target.result);
+                };
+                reader.onerror = function() {
+                    showStatus('❌ Error reading image file', 'error');
+                };
+                reader.readAsDataURL(file);
+            } else {
+                updateQR();
+            }
+        }
+
+        // Generate IATA Boarding Pass
+        async function generateIataBoardingPass() {
+            // Get form values
+            const firstName = document.getElementById('firstName').value || 'Rahul';
+            const lastName = document.getElementById('lastName').value || 'Sharma';
+            const pnr = document.getElementById('pnr').value || 'ABC123';
+            const flight = document.getElementById('flight').value || 'AI 2727';
+            const from = document.getElementById('from').value || 'BOM';
+            const fromTerminal = document.getElementById('fromTerminal').value || 'T1';
+            const to = document.getElementById('to').value || 'DEL';
+            const toTerminal = document.getElementById('toTerminal').value || 'T1';
+            const date = document.getElementById('date').value || '2025-09-10';
+            const time = document.getElementById('time').value || '13:15';
+            const arrivalDate = document.getElementById('arrivalDate').value || '2025-09-10';
+            const arrivalTime = document.getElementById('arrivalTime').value || '15:35';
+            const boardingTime = document.getElementById('boardingTime').value || '12:45';
+            const seat = document.getElementById('seat').value || '17A';
+            const flightClass = document.getElementById('class').value || 'Y';
+            const sequence = document.getElementById('sequence').value || '001A';
+            const gate = document.getElementById('gate').value || '07';
+            
+            // Format dates
+            const formattedDate = formatDateShort(date);
+            const formattedArrivalDate = formatDateShort(arrivalDate);
+            
+            // Get city names from airport codes
+            const fromCity = airportCities[from] || from;
+            const toCity = airportCities[to] || to;
+            
+            // Update IATA boarding pass preview
+            document.getElementById('iataFrom').textContent = from;
+            document.getElementById('iataFromCity').textContent = fromCity;
+            document.getElementById('iataFromTerminal').textContent = 'Terminal ' + fromTerminal;
+            document.getElementById('iataFromTime').textContent = `${formattedDate} ${formatTime(time)}`;
+            
+            document.getElementById('iataTo').textContent = to;
+            document.getElementById('iataToCity').textContent = toCity;
+            document.getElementById('iataToTerminal').textContent = 'Terminal ' + toTerminal;
+            document.getElementById('iataToTime').textContent = `${formattedArrivalDate} ${formatTime(arrivalTime)}`;
+            
+            // Passenger name (centered)
+            const passengerName = (firstName + ' ' + lastName).toUpperCase();
+            document.getElementById('iataPassenger').textContent = passengerName;
+            
+            // Flight details
+            document.getElementById('iataFlight').textContent = flight;
+            document.getElementById('iataPnr').textContent = pnr;
+            document.getElementById('iataGate').textContent = gate;
+            document.getElementById('iataSeat').textContent = seat;
+            document.getElementById('iataSequence').textContent = sequence;
+            document.getElementById('iataClass').textContent = getClassText(flightClass).toUpperCase();
+            
+            // Boarding time below airplane
+            document.getElementById('iataBoarding').textContent = formatTime(boardingTime);
+            
+            // Update weather information with real-time data
+            await updateWeather(to);
+            
+            // Generate QR code using canvas directly
+            const qrData = generateIataBarcodeData();
+            await generateQRCode('iataQrCode', qrData, 100);
+            
+            showStatus('✅ IATA Boarding Pass generated successfully!', 'success');
+        }
+
+        // Generate QR Code function (using canvas directly)
+        function generateQRCode(canvasId, data, size) {
+            return new Promise((resolve, reject) => {
+                const canvas = document.getElementById(canvasId);
+                if (!canvas) {
+                    reject(new Error('Canvas element not found: ' + canvasId));
+                    return;
+                }
+                
+                // Clear the canvas first
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // Ensure data is not empty
+                if (!data || data.trim() === '') {
+                    console.error('QR Code data is empty');
+                    reject(new Error('QR Code data is empty'));
+                    return;
+                }
+                
+                // Set canvas dimensions
+                canvas.width = size;
+                canvas.height = size;
+                
+                console.log('Generating QR code with data:', data);
+                
+                QRCode.toCanvas(canvas, data, {
+                    width: size,
+                    margin: 1,
+                    color: {
+                        dark: '#000000',
+                        light: '#ffffff'
+                    }
+                }, function(error) {
+                    if (error) {
+                        console.error('QR Code generation error:', error);
+                        reject(error);
+                    } else {
+                        console.log('QR Code generated successfully');
+                        resolve();
+                    }
+                });
+            });
+        }
+
+        // Function to fetch weather data from API
+        async function fetchWeatherData(cityCode) {
+            try {
+                // Simulate API call with fallback data
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                // Return mock weather data
+                return {
+                    temperature: Math.floor(Math.random() * 15) + 20,
+                    description: 'Sunny',
+                    emoji: '☀️',
+                    city: airportCities[cityCode] || cityCode,
+                    timestamp: new Date().toISOString()
+                };
+            } catch (error) {
+                console.error('Weather API Error:', error);
+                // Fallback data
+                return {
+                    temperature: 25,
+                    description: 'Weather unavailable',
+                    emoji: '🌤️',
+                    city: airportCities[cityCode] || cityCode,
+                    timestamp: new Date().toISOString()
+                };
+            }
+        }
+
+        // Function to update weather information
+        async function updateWeather(destinationCode) {
+            try {
+                const weather = await fetchWeatherData(destinationCode);
+                const updatedTime = new Date(weather.timestamp).toLocaleTimeString();
+                
+                document.getElementById('weatherIcon').textContent = weather.emoji;
+                document.getElementById('weatherTemp').textContent = `${weather.temperature}°C`;
+                document.getElementById('weatherDesc').textContent = weather.description;
+                document.getElementById('weatherLocation').textContent = weather.city;
+                document.getElementById('weatherUpdated').textContent = `Updated: ${updatedTime}`;
+                
+                return true;
+            } catch (error) {
+                console.error('Weather update error:', error);
+                // Set default weather data
+                document.getElementById('weatherIcon').textContent = '🌤️';
+                document.getElementById('weatherTemp').textContent = '25°C';
+                document.getElementById('weatherDesc').textContent = 'Weather unavailable';
+                document.getElementById('weatherLocation').textContent = airportCities[destinationCode] || destinationCode;
+                document.getElementById('weatherUpdated').textContent = 'Updated: Failed';
+                
+                return false;
+            }
+        }
+
+        // Show status message
+        function showStatus(message, type) {
+            const statusEl = document.getElementById('statusMessage');
+            statusEl.textContent = message;
+            statusEl.className = `status-message ${type}`;
+            statusEl.style.display = 'block';
+            
+            setTimeout(() => {
+                statusEl.style.display = 'none';
+            }, 4000);
+        }
+
+        // Setup shape selection buttons
+        function setupShapeButtons() {
+            // Corner square styles (big outer corners)
+            document.querySelectorAll('[data-corner-type]').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('[data-corner-type]').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    currentCornerStyle = this.getAttribute('data-corner-type');
+                    updateQRCode();
+                });
+            });
+
+            // Inner corner dot styles (small inner dots)
+            document.querySelectorAll('[data-inner-type]').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('[data-inner-type]').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    currentInnerCornerStyle = this.getAttribute('data-inner-type');
+                    updateQRCode();
+                });
+            });
+        }
+
+        // Switch between format fields
+        function switchFormatFields() {
+            const qrType = document.getElementById('qrType').value;
+            
+            // Hide all format fields
+            document.getElementById('vcardFields').style.display = 'none';
+            document.getElementById('whatsappFields').style.display = 'none';
+            document.getElementById('boardingFields').style.display = 'none';
+            document.getElementById('customFields').style.display = 'none';
+            
+            // Show the selected format fields
+            document.getElementById(qrType + 'Fields').style.display = 'block';
+            
+            // Update preview visibility
+            document.getElementById('standardPreview').style.display = qrType === 'boarding' ? 'none' : 'block';
+            document.getElementById('iataPreview').style.display = qrType === 'boarding' ? 'block' : 'none';
+            
+            // Update current QR type
+            currentQRType = qrType;
+            
+            // Update QR code
+            updateQRCode();
+        }
+
+        // Helper functions
+        function formatDateShort(dateString) {
+            const date = new Date(dateString);
+            const options = { day: 'numeric', month: 'short' };
+            return date.toLocaleDateString('en-US', options).toUpperCase();
+        }
+        
+        function formatTime(timeString) {
+            if (!timeString) return '';
+            const [hours, minutes] = timeString.split(':');
+            return `${hours}:${minutes}`;
+        }
+        
+        function getClassText(classCode) {
+            switch (classCode) {
+                case 'Y': return 'Economy';
+                case 'W': return 'Premium Economy';
+                case 'J': return 'Business';
+                case 'F': return 'First';
+                default: return 'Economy';
+            }
+        }
+
+        // Event Listeners
+        document.getElementById('generateBtn').addEventListener('click', updateQRCode);
+        
+        document.getElementById('downloadBtn').addEventListener('click', function() {
+            if (qrCode) {
+                try {
+                    const qrType = document.getElementById('qrType').value;
+                    const typeNames = {
+                        'vcard': 'vcard',
+                        'whatsapp': 'whatsapp',
+                        'boarding': 'boarding_pass',
+                        'custom': 'custom'
+                    };
+                    
+                    let name = typeNames[qrType] + '_qrcode';
+                    
+                    // For custom QR codes, use the custom title if available
+                    if (qrType === 'custom') {
+                        const customTitle = document.getElementById('customTitle').value;
+                        if (customTitle && customTitle.trim() !== '') {
+                            name = customTitle.replace(/\s+/g, '_').toLowerCase() + '_qrcode';
+                        }
+                    }
+                    
+                    qrCode.download({ 
+                        name: name,
+                        extension: "png"
+                    });
+                    showStatus('📥 Download started!', 'success');
+                } catch (error) {
+                    showStatus('❌ Error downloading QR code', 'error');
+                }
+            } else {
+                showStatus('❌ Please generate a QR code first', 'error');
+            }
+        });
+
+        // Color preview updates
+        const colorInputs = ['dotColor', 'bgColor', 'cornerColor', 'innerCornerColor'];
+        colorInputs.forEach(id => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.addEventListener('input', function() {
+                    const preview = document.getElementById(id + 'Preview');
+                    if (preview) {
+                        preview.style.background = this.value;
+                    }
+                    updateQRCode();
+                });
+            }
+        });
+
+        // Slider value displays
+        const sliders = ['logoScale', 'qrSize'];
+        sliders.forEach(id => {
+            const element = document.getElementById(id);
+            const display = document.getElementById(id + 'Value');
+            if (element && display) {
+                element.addEventListener('input', function() {
+                    if (id === 'logoScale') {
+                        display.textContent = Math.round(this.value * 100) + '%';
+                    } else {
+                        display.textContent = this.value + 'px';
+                    }
+                    updateQRCode();
+                });
+            }
+        });
+
+        // Auto-generate when contact info changes
+        const contactInputs = ['name', 'title', 'phone', 'email', 'website', 
+                              'whatsappNumber', 'whatsappMessage',
+                              'firstName', 'lastName', 'pnr', 'flight', 'from', 
+                              'fromTerminal', 'to', 'toTerminal', 'date', 'time',
+                              'arrivalDate', 'arrivalTime', 'boardingTime', 'seat', 
+                              'class', 'sequence', 'gate',
+                              'customTitle', 'customContent'];
+        contactInputs.forEach(id => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.addEventListener('input', updateQRCode);
+            }
+        });
+
+        // Logo upload
+        const logoUpload = document.getElementById('logoUpload');
+        if (logoUpload) {
+            logoUpload.addEventListener('change', updateQRCode);
+        }
+
+        // QR type selector
+        const qrTypeSelect = document.getElementById('qrType');
+        if (qrTypeSelect) {
+            qrTypeSelect.addEventListener('change', switchFormatFields);
+        }
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set default dates
+            const today = new Date();
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            
+            document.getElementById('date').value = today.toISOString().split('T')[0];
+            document.getElementById('arrivalDate').value = tomorrow.toISOString().split('T')[0];
+            
+            setupShapeButtons();
+            switchFormatFields(); // Initialize the correct format fields
+            updateQRCode();
+        });
+
+        // Handle window resize
+        window.addEventListener('resize', function() {
+            // Re-generate QR code on resize to ensure proper scaling
+            setTimeout(updateQRCode, 100);
+        });
+    </script>
+</body>
+</html>
